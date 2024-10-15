@@ -33,17 +33,16 @@ class Content {
     private int getHeight() { return height; }
   }
 
-  private Color color;
-  private Font font;
-  private int lineHeight;
-
   private enum Alignment {
     LEFT, RIGHT, CENTERED
   }
 
-  private String rawText;
-  private Alignment alignment;
   private Frame frame;
+  private Color color;
+  private Alignment alignment;
+  private String rawText;
+  private Font font;
+  private int lineHeight;
 
   private Content(Frame frame, String hexColor, Alignment alignment, String text, int fontSize, int lineHeight) {
     this.frame = frame;
@@ -93,12 +92,12 @@ class Content {
       Graphics2D g2d = image.createGraphics();
 
       String text = String.format(rawText, amount);
-      g2d.setFont(font);
+      g2d.setFont(this.font);
       g2d.setColor(color);
 
       int frameX = frame.getX(), frameY = frame.getY(), frameWidth = frame.getWidth(), frameHeight = frame.getHeight();
       // Uncomment for debugging the text draw frame
-      g2d.drawRect(frameX, frameY, frameWidth, frameHeight);
+      // g2d.drawRect(frameX, frameY, frameWidth, frameHeight);
 
       FontMetrics fm = g2d.getFontMetrics();
       List<String> lines = wrapText(text, fm, frameWidth);
