@@ -20,16 +20,10 @@ public class KBImageProcessor {
 
 class Content {
   private static class Frame {
-    private int x;
-    private int y;
-    private int width;
-    private int height;
+    private int x, y, width, height;
 
     private Frame(int x, int y, int width, int height) {
-      this.x = x;
-      this.y = y;
-      this.width = width;
-      this.height = height;
+      this.x = x; this.y = y; this.width = width; this.height = height;
     }
 
     // Getters
@@ -39,81 +33,96 @@ class Content {
     private int getHeight() { return height; }
   }
 
-  // Color property
   private Color color;
+  private Font font;
+  private int lineHeight;
 
-  // Enum for alignment
   private enum Alignment {
-    LEFT,
-    RIGHT,
-    CENTERED
+    LEFT, RIGHT, CENTERED
   }
 
   private String rawText;
   private Alignment alignment;
   private Frame frame;
 
-  private Content(Frame frame, String hexColor, Alignment alignment, String text) {
+  private Content(Frame frame, String hexColor, Alignment alignment, String text, int fontSize, int lineHeight) {
     this.frame = frame;
     this.color = Color.decode(hexColor);
     this.alignment = alignment;
     this.rawText = text;
+    this.lineHeight = lineHeight;
+
+    try {
+      Font customFont = Font.createFont(Font.TRUETYPE_FONT, new File("font/SF-Pro-Display-Medium.otf"));
+      this.font = customFont.deriveFont(Font.PLAIN, fontSize);
+    } catch (Exception e) {
+      e.printStackTrace();
+      this.font = new Font("Serif", Font.PLAIN, fontSize);
+    }
   }
 
-  public static final Content UMICO_LOAN_BANNER_1_EN = new Content(new Frame(50, 50, 700, 190), "#25282B", Alignment.LEFT, "ENglisht покупки на %d ₼, которые мы выделили для вас");
-  public static final Content UMICO_LOAN_BANNER_1_RU = new Content(new Frame(50, 50, 700, 190), "#25282B", Alignment.LEFT, "Совершайте покупки на %d ₼, которые мы выделили для вас");
-  public static final Content UMICO_LOAN_BANNER_1_AZ = new Content(new Frame(50, 50, 700, 190), "#25282B", Alignment.LEFT, "Azerbaijani покупки на %d ₼, которые мы выделили для вас");
+  public static final Content UMICO_LOAN_BANNER_1_EN = new Content(
+      new Frame(50, 50, 700, 190), 
+      "#25282B", 
+      Alignment.LEFT, 
+      "Make purchases with the %d ₼ we have allocated for you",
+      40,
+      20
+      );
+  public static final Content UMICO_LOAN_BANNER_1_RU = new Content(
+      new Frame(50, 50, 700, 190), 
+      "#25282B", 
+      Alignment.LEFT, 
+      "Совершайте покупки на %d ₼, которые мы выделили для вас",
+      40,
+      20
+      );
+  public static final Content UMICO_LOAN_BANNER_1_AZ = new Content(
+      new Frame(50, 50, 700, 190), 
+      "#25282B", 
+      Alignment.LEFT, 
+      "Məhz sizin üçün ayırdığımız %d ₼ məbləğlə alış-veriş edin",
+      40,
+      20
+      );
 
   public String drawText(int amount) {
     String filename = UUID.randomUUID().toString();
     try {
-      // Load the image
       BufferedImage image = ImageIO.read(new File("input.png"));
-
-      // Create a Graphics2D object
       Graphics2D g2d = image.createGraphics();
 
       String text = String.format(rawText, amount);
+      g2d.setFont(font);
+      g2d.setColor(color);
 
-      // Set the font and color
-      g2d.setFont(new Font("Serif", Font.PLAIN, 40));
-      g2d.setColor(new Color(37, 40, 43));
+      int frameX = frame.getX(), frameY = frame.getY(), frameWidth = frame.getWidth(), frameHeight = frame.getHeight();
+      // Uncomment for debugging the text draw frame
+      g2d.drawRect(frameX, frameY, frameWidth, frameHeight);
 
-      int frameX = this.frame.getX(), frameY = this.frame.getY(), frameWidth = this.frame.getWidth(), frameHeight = this.frame.getHeight();
-      // uncomment to see the draw frame for debugging
-      // g2d.drawRect(frameX, frameY, frameWidth, frameHeight);
-
-      // Wrap text into lines
       FontMetrics fm = g2d.getFontMetrics();
       List<String> lines = wrapText(text, fm, frameWidth);
 
-      // Calculate starting y position
-      int lineHeight = fm.getHeight();
-      int startY = frameY + (frameHeight - lines.size() * lineHeight) / 2 + fm.getAscent();
+      int totalTextHeight = lines.size() * fm.getHeight() + (lines.size() - 1) * lineHeight;
+      int startY = frameY + (frameHeight - totalTextHeight) / 2 + fm.getAscent();
 
-      // Draw each line of text within the frame
       int currentY = startY;
       for (String line : lines) {
         int textWidth = fm.stringWidth(line);
-
         int x = switch (alignment) {
           case LEFT -> frameX;
-          case CENTERED -> frameX + (frameWidth - textWidth) / 2; 
-          case RIGHT -> frameX + frameWidth - textWidth; 
+          case CENTERED -> frameX + (frameWidth - textWidth) / 2;
+          case RIGHT -> frameX + frameWidth - textWidth;
           default -> 0;
         };
 
         g2d.drawString(line, x, currentY);
-        // Move to the next line
-        currentY += lineHeight; 
+        currentY += fm.getHeight() + lineHeight;
       }
 
-      // Dispose the Graphics2D object
       g2d.dispose();
-
-      // Save the modified image
       ImageIO.write(image, "png", new File("output/", filename + ".png"));
-      System.out.println("Output file" + filename + ".png");
+      System.out.println("Output file: " + filename + ".png");
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -121,7 +130,6 @@ class Content {
     return filename;
   }
 
-  // Method to wrap text into lines based on the maximum width
   private static List<String> wrapText(String text, FontMetrics fm, int maxWidth) {
     List<String> lines = new ArrayList<>();
     String[] words = text.split(" ");
